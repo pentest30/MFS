@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace FAMFS
@@ -9,9 +10,15 @@ namespace FAMFS
     class Program
     {
         static private string[] _txtToIndex;
+        static List<string> _stopWords;
         static void Main(string[] args)
         {
             const string txtToIndexPath = @"C:\Users\pen\Documents\Visual Studio 2013\Projects\FAMFS\FAMFS\textes\text1.txt";
+            var fileName = @"C:\Users\pen\Documents\Visual Studio 2013\Projects\FAMFS\FAMFS\textes\fr.txt";
+            //var txtToIndexPath = Environment.CurrentDirectory + @"\textes\text1.txt";
+
+           
+            LoadStopWords(fileName, out _stopWords);
             var txtToIndex2 = File.ReadAllLines(txtToIndexPath);
             _txtToIndex = new string[txtToIndex2.Length];
             for (int i = 0; i < txtToIndex2.Length; i++)
@@ -35,6 +42,16 @@ namespace FAMFS
             Console.ReadKey();
         }
 
+        private static void LoadStopWords(string fileName, out List<string> stopWords)
+        {
+            stopWords = new List<string>();
+            using (StreamReader reader = new StreamReader(fileName, Encoding.GetEncoding("iso-8859-1")))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                    stopWords.Add(" " + line + " "); // Add to list.
+            }
+        }
 
 
         static IEnumerable<Pair> GetPairs(string line)
@@ -45,26 +62,27 @@ namespace FAMFS
             {
                 if (System.Text.RegularExpressions.Regex.IsMatch(lines[i], "^[a-zA-Z0-9\x20]+$"))
                 {
-                    var key = lines[i].ToLower();
-                    var j = i + 1;
-                    if (j < lines.Length)
+                    
+                }
+                var key = lines[i].ToLower();
+                var j = i + 1;
+                if (j < lines.Length)
+                {
+                    while (j < lines.Length)
                     {
-                        while (j < lines.Length)
-                        {
-                            if (key.Trim().ToLower() != lines[j].ToLower().Trim())
-                                result.Add(new Pair
-                                {
-                                    Word1 = key.Trim(),
-                                    Word2 = lines[j].Trim().ToLower()
-                                });
+                        if (key.ToLower() != lines[j].ToLower().Trim() && !_stopWords.Any(x => x.Contains(key)) || !_stopWords.Any(x => x.Contains(lines[j].ToLower().Trim())))
+                            result.Add(new Pair
+                            {
+                                Word1 = key.Trim(),
+                                Word2 = lines[j].Trim().ToLower()
+                            });
 
-                            j++;
-                        }
+                        j++;
                     }
-                    else
-                    {
-                        break;
-                    }
+                }
+                else
+                {
+                    break;
                 }
 
             }
