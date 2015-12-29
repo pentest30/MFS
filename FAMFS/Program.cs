@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace FAMFS
 {
@@ -11,7 +12,12 @@ namespace FAMFS
         static void Main(string[] args)
         {
             const string txtToIndexPath = @"C:\Users\pen\Documents\Visual Studio 2013\Projects\FAMFS\FAMFS\textes\text1.txt";
-            _txtToIndex = File.ReadAllLines(txtToIndexPath);
+            var txtToIndex2 = File.ReadAllLines(txtToIndexPath);
+            _txtToIndex = new string[txtToIndex2.Length];
+            for (int i = 0; i < txtToIndex2.Length; i++)
+            {
+                _txtToIndex[i] = StringWordsRemove(txtToIndex2[i]);
+            }
             var pairs = new List<Pair>();
             foreach (var s in _txtToIndex)
             {
@@ -39,17 +45,19 @@ namespace FAMFS
             {
                 if (System.Text.RegularExpressions.Regex.IsMatch(lines[i], "^[a-zA-Z0-9\x20]+$"))
                 {
-                    var key = lines[i].Trim().Replace('.', ' ').ToLower();
+                    var key = lines[i].ToLower();
                     var j = i + 1;
                     if (j < lines.Length)
                     {
                         while (j < lines.Length)
                         {
-                            result.Add(new Pair
-                            {
-                                Word1 = key,
-                                Word2 = lines[j].Trim().Replace('.', ' ').ToLower()
-                            });
+                            if (key.Trim().ToLower() != lines[j].ToLower().Trim())
+                                result.Add(new Pair
+                                {
+                                    Word1 = key.Trim(),
+                                    Word2 = lines[j].Trim().ToLower()
+                                });
+
                             j++;
                         }
                     }
@@ -118,11 +126,12 @@ namespace FAMFS
                             int q = 0;
                             ngram = ngram.TrimStart().TrimEnd();
                             var items = ngram.TrimStart().TrimEnd().Split(' ');
-                            foreach (var s in _txtToIndex)
+                            string ngram1 = ngram;
+                            Parallel.ForEach(_txtToIndex, s =>
                             {
-                                if (GetOccurence(s.Split(' '), ngram.Split(' '))) q++;
-
-                            }
+                                if (GetOccurence(s.Split(' '), ngram1.Split(' '))) q++;
+                            });
+                           
                             if (q < 2)
                             {
                                 int index = items.Length - 1;
@@ -135,10 +144,14 @@ namespace FAMFS
                 {
                     ngram = ngram.Replace('.', ' ').TrimEnd().TrimStart();
                     int q = 0;
-                    foreach (var r in result)
+                    Parallel.ForEach(result, r =>
                     {
                         if (GetOccurence(r.Split(' '), ngram.Split(' '))) q++;
-                    }
+                    });
+                    //foreach (var r in result)
+                    //{
+                    //    if (GetOccurence(r.Split(' '), ngram.Split(' '))) q++; 
+                    //}
                     if (q ==0 )result.Add(ngram);
                 }
             }
@@ -170,6 +183,12 @@ namespace FAMFS
                 if (i == 0) return false;
             }
             return true;
+        }
+        static string StringWordsRemove(string stringToClean)
+        {
+            // Define how to tokenize the input string, i.e. space only or punctuations also
+            return string.Join(" ", stringToClean
+                .Split(new[] { '/', '«', '»', '"', '"', ')', '(', ':', ';', ',', '.', '?', '!','-' }, StringSplitOptions.RemoveEmptyEntries));
         }
     }
     
